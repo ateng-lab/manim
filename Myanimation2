@@ -1,0 +1,195 @@
+accelerating_reference.py
+from manim import *
+import numpy as np
+
+config.background_color = WHITE
+
+class AcceleratingReferenceFrame(ThreeDScene):
+
+    def construct(self):
+
+        self.set_camera_orientation(
+            phi=70*DEGREES,
+            theta=-45*DEGREES,
+            zoom=1.1
+        )
+
+        ###################################################
+        # Stationary coordinate system O
+        ###################################################
+
+        axes = ThreeDAxes(
+            x_length=4,
+            y_length=4,
+            z_length=4,
+            axis_config={
+                "color": BLACK,
+                "stroke_width":2
+            }
+        )
+
+        labels = axes.get_axis_labels(
+            Tex("x", color=BLACK),
+            Tex("y", color=BLACK),
+            Tex("z", color=BLACK)
+        )
+
+        origin_label = Tex("O", color=BLACK).scale(0.7)
+        origin_label.move_to(ORIGIN + DOWN*0.3 + LEFT*0.3)
+
+        ###################################################
+        # Particle (fixed in space)
+        ###################################################
+
+        particle_position = np.array([2.7,0.6,2.2])
+
+        particle = Dot3D(
+            point=particle_position,
+            radius=0.05,
+            color=BLACK
+        )
+
+        particle_label = Tex("P", color=BLACK).scale(0.7)
+        particle_label.next_to(particle, RIGHT)
+
+        ###################################################
+        # Position vector r
+        ###################################################
+
+        r_vector = Arrow3D(
+            start=ORIGIN,
+            end=particle_position,
+            color=BLACK,
+            thickness=0.02
+        )
+
+        r_label = Tex("r", color=BLACK).scale(0.7)
+        r_label.move_to(
+            particle_position/2 + UP*0.2
+        )
+
+        ###################################################
+        # Moving coordinate frame O'
+        ###################################################
+
+        mover = ValueTracker(0)
+
+        acceleration = np.array([1.2,0,0.8])
+
+        def displacement():
+
+            t = mover.get_value()
+
+            # s = 1/2 a t^2
+            return 0.5*acceleration*t*t
+
+        ###################################################
+        # Moving axes
+        ###################################################
+
+        def moving_axes():
+
+            d = displacement()
+
+            ax = ThreeDAxes(
+                x_length=4,
+                y_length=4,
+                z_length=4,
+                axis_config={
+                    "color":BLACK,
+                    "stroke_width":2
+                }
+            )
+
+            ax.shift(d)
+
+            return ax
+
+        moving_frame = always_redraw(moving_axes)
+
+        ###################################################
+        # Labels x',y',z'
+        ###################################################
+
+        xprime = always_redraw(
+            lambda:
+            Tex("x'",color=BLACK).scale(0.6).move_to(
+                displacement()+RIGHT*4.2
+            )
+        )
+
+        yprime = always_redraw(
+            lambda:
+            Tex("y'",color=BLACK).scale(0.6).move_to(
+                displacement()+DOWN*2.3+LEFT*1.4
+            )
+        )
+
+        zprime = always_redraw(
+            lambda:
+            Tex("z'",color=BLACK).scale(0.6).move_to(
+                displacement()+UP*4.2
+            )
+        )
+
+        Oprime = always_redraw(
+            lambda:
+            Tex("O'",color=BLACK).scale(0.7).move_to(
+                displacement()+DOWN*0.3+LEFT*0.3
+            )
+        )
+
+        ###################################################
+        # Vector r'
+        ###################################################
+
+        def moving_vector():
+
+            d = displacement()
+
+            return Arrow3D(
+                start=d,
+                end=particle_position,
+                color=BLACK,
+                thickness=0.02
+            )
+
+        rprime = always_redraw(moving_vector)
+
+        rprime_label = always_redraw(
+            lambda:
+            Tex("r'",color=BLACK).scale(0.7).move_to(
+                (particle_position+displacement())/2 + UP*0.2
+            )
+        )
+
+        ###################################################
+        # Animation
+        ###################################################
+
+        self.add(
+            axes,
+            labels,
+            origin_label,
+            particle,
+            particle_label,
+            r_vector,
+            r_label,
+            moving_frame,
+            xprime,
+            yprime,
+            zprime,
+            Oprime,
+            rprime,
+            rprime_label
+        )
+
+        self.wait(1)
+
+        self.play(
+            mover.animate.set_value(2.8),
+            run_time=8,
+            rate_func=linear
+        )
+
+        self.wait(2)
